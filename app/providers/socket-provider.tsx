@@ -14,7 +14,7 @@ enum InferEmitEventEnum {
 }
 
 interface SocketContextType {
-  socket: Socket;
+  socket: Socket | null;
   isConnected: boolean;
 }
 
@@ -34,17 +34,21 @@ export interface IWSMessage {
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { getToken, isSignedIn } = useAuth();
-  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [isConnected, setIsConnected] = useState(socket?.connected ?? false);
   const { addCompletedWorkflow } = useWorkflowData();
 
 
   useEffect(() => {
+    if (!socket) return;
+
+    const s = socket; // local const for TypeScript narrowing in cleanup
+
     const onConnect = () => {
       console.log("Socket connected");
       setIsConnected(true);
     };
 
-     
+
     const onDisconnect = (reason: string, details: any) => {
       console.log("Socket disconnected", reason, details);
       setIsConnected(false);
@@ -53,16 +57,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const onErrorMessage = (wsMsg: IWSMessage) => {
       console.error(`error: ${JSON.stringify(wsMsg)}`);
-      // const msg = {
-      //   prompt_id: wsMsg.prompt_id,
-      //   data: `${JSON.stringify(wsMsg)}`
-      // };
-      // updateCurrentLog(msg);
     };
 
 
 
-     
+
     const onResultMessage = async (data: {
       prompt_id: string,
       completed: boolean,
@@ -70,10 +69,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       execution_time_seconds: number,
       prompt: {
         prompt_id: string,
-         
+
         [key: string]: any,
       }
-       
+
       [key: string]: any
     }) => {
       if (data) {
@@ -100,42 +99,44 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
+    s.on("connect", onConnect);
+    s.on("disconnect", onDisconnect);
 
-    socket.on('connect_error', (err) => {
+    s.on('connect_error', (err) => {
       console.error('Socket connection error:', err);
       setIsConnected(false);
     });
 
-    socket.on('error', (error) => {
+    s.on('error', (error) => {
       console.error('Socket error:', error);
     });
 
-    socket.on(InferEmitEventEnum.ErrorMessage, onErrorMessage);
-    socket.on(InferEmitEventEnum.ResultMessage, onResultMessage);
+    s.on(InferEmitEventEnum.ErrorMessage, onErrorMessage);
+    s.on(InferEmitEventEnum.ResultMessage, onResultMessage);
 
-    socket.io.on("reconnect_attempt", async () => {
+    s.io.on("reconnect_attempt", async () => {
       try {
         const token = await getToken({ template: "long_token" });
-        socket.auth = { authorization: token ?? "" };
+        s.auth = { authorization: token ?? "" };
       } catch (e) {
         console.error("Failed to refresh token on reconnect_attempt:", e);
       }
     });
 
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off(InferEmitEventEnum.ErrorMessage, onErrorMessage);
-      socket.off(InferEmitEventEnum.ResultMessage, onResultMessage);
-      socket.off('error');
-      socket.io.off("reconnect_attempt");
+      s.off("connect", onConnect);
+      s.off("disconnect", onDisconnect);
+      s.off(InferEmitEventEnum.ErrorMessage, onErrorMessage);
+      s.off(InferEmitEventEnum.ResultMessage, onResultMessage);
+      s.off('error');
+      s.io.off("reconnect_attempt");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
+    if (!socket) return;
+
     const connectWithAuth = async () => {
       if (!isSignedIn) return;
       try {

@@ -11,8 +11,6 @@
     "generate-api": "openapi --input http://localhost:8000/openapi.json --output src/generated --client fetch"
   },
   "dependencies": {
-    "@clerk/nextjs": "6.36.5",
-    "@clerk/themes": "^2.4.35",
     "@date-fns/utc": "^2.1.1",
     "@hookform/resolvers": "^5.2.2",
     "@img-comparison-slider/react": "^8.0.2",

@@ -5,7 +5,9 @@ import { IViewComfyState, useViewComfy } from "@/app/providers/view-comfy-provid
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton"
 import Image from "next/image";
-import { SignedIn, UserButton } from "@clerk/nextjs";
+// ===== CLERK DISABLED =====
+// import { SignedIn, UserButton } from "@clerk/nextjs";
+// ===== END CLERK DISABLED =====
 import { useBoundStore } from "@/stores/bound-store";
 import { SettingsService } from "@/app/services/settings-service";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -153,6 +155,7 @@ export function TopNav() {
                         </Button>
                     </div>
                 )}
+                {/* ===== CLERK DISABLED =====
                 {userManagementEnabled && (
                     <>
                     <TeamSwitch />
@@ -161,6 +164,7 @@ export function TopNav() {
                     </SignedIn>
                     </>
                 )}
+                ===== END CLERK DISABLED ===== */}
                 <ModeToggle />
             </div>
         </nav>

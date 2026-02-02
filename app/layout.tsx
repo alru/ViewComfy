@@ -1,7 +1,9 @@
 import * as Sentry from '@sentry/nextjs';
 import type { Metadata } from "next";
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
+// ===== CLERK PROVIDER DISABLED =====
+// import { ClerkProvider } from "@clerk/nextjs";
+// ===== END CLERK PROVIDER =====
 import { ThemeProvider } from "@/components/theme-provider";
 import ClientRootLayout from './layout-client';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -23,7 +25,9 @@ export function generateMetadata(): Metadata {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const userManagementEnabled = process.env.NEXT_PUBLIC_USER_MANAGEMENT === "true";
+  // ===== CLERK DISABLED =====
+  // const userManagementEnabled = process.env.NEXT_PUBLIC_USER_MANAGEMENT === "true";
+  // ===== END CLERK DISABLED =====
 
   const content = (
     <ThemeProvider
@@ -48,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <head />
       <body>
+        {/* ===== CLERK PROVIDER DISABLED =====
         {userManagementEnabled ? (
           <ClerkProvider
             signInUrl="/login"
@@ -56,6 +61,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : (
           content
         )}
+        ===== END CLERK PROVIDER ===== */}
+        {content}
       </body>
     </html>
   );

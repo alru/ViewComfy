@@ -3,7 +3,9 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { ErrorResponseFactory } from "@/app/models/errors";
 import { ViewComfyApiParamBuilder } from "@/app/models/viewcomfy-api-param-builder";
 import { SettingsService } from "@/app/services/settings-service";
-import { auth } from "@clerk/nextjs/server";
+// ===== CLERK DISABLED =====
+// import { auth } from "@clerk/nextjs/server";
+// ===== END CLERK DISABLED =====
 import { Secret } from "@/app/services/viewcomfy-api-services";
 
 const errorResponseFactory = new ErrorResponseFactory();
@@ -22,29 +24,31 @@ export async function POST(request: NextRequest) {
 
         let secret: Secret | undefined;
 
-        if (settingsService.isUserManagementEnabled()) {
-            const { userId, getToken } = await auth();
-
-            if (!userId) {
-                const error = new Error('Unauthorized');
-                const responseError = errorResponseFactory.getErrorResponse(error);
-
-                return NextResponse.json(responseError, {
-                    status: 401,
-                });
-            }
-
-            const token = await getToken({ template: "long_token" });
-            if (!token) {
-                const error = new Error('Unauthorized: Token is missing');
-                const responseError = errorResponseFactory.getErrorResponse(error);
-
-                return NextResponse.json(responseError, {
-                    status: 401,
-                });
-            }
-            secret = new Secret({ token });
-        }
+        // ===== CLERK DISABLED =====
+        // if (settingsService.isUserManagementEnabled()) {
+        //     const { userId, getToken } = await auth();
+        //
+        //     if (!userId) {
+        //         const error = new Error('Unauthorized');
+        //         const responseError = errorResponseFactory.getErrorResponse(error);
+        //
+        //         return NextResponse.json(responseError, {
+        //             status: 401,
+        //         });
+        //     }
+        //
+        //     const token = await getToken({ template: "long_token" });
+        //     if (!token) {
+        //         const error = new Error('Unauthorized: Token is missing');
+        //         const responseError = errorResponseFactory.getErrorResponse(error);
+        //
+        //         return NextResponse.json(responseError, {
+        //             status: 401,
+        //         });
+        //     }
+        //     secret = new Secret({ token });
+        // }
+        // ===== END CLERK DISABLED =====
 
         if (!secret) {
             if (!clientId || !clientSecret) {

@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/clerk-shim";
 import useSWR from "swr";
 import useSWRImmutable from "swr/immutable";
 import { useCallback, useEffect, useMemo } from "react";

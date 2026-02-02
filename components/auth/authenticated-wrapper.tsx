@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/clerk-shim";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { SocketProvider } from "@/app/providers/socket-provider";

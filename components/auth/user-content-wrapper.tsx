@@ -1,5 +1,5 @@
 "use client"
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/clerk-shim";
 import { ReactNode } from "react";
 
 interface UserContentWrapperProps {

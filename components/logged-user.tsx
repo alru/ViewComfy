@@ -14,7 +14,7 @@ import {
     DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { useUser, useAuth } from "@clerk/nextjs";
+import { useUser, useAuth } from "@/lib/clerk-shim";
 
 export function UserNav() {
     const { isSignedIn, user, isLoaded } = useUser();
@@ -23,7 +23,7 @@ export function UserNav() {
         return <div>Loading...</div>;
     }
 
-    if (!isSignedIn) {
+    if (!isSignedIn || !user) {
         return <div></div>;
     }
 

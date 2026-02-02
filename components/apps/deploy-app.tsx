@@ -1,5 +1,5 @@
 import { useBoundStore } from "@/stores/bound-store";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/clerk-shim";
 import { Loader2, CheckCircle2, ExternalLink, Copy } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/clerk-shim";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Socket } from "socket.io-client";
 import { socket } from "@/lib/socket";

@@ -137,13 +137,15 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!socket) return;
 
+    const s = socket;
+
     const connectWithAuth = async () => {
       if (!isSignedIn) return;
       try {
         const token = await getToken({ template: "long_token" });
         if (token) {
-          socket.auth = { authorization: token };
-          socket.connect(); // built-in reconnection will handle further attempts
+          s.auth = { authorization: token };
+          s.connect(); // built-in reconnection will handle further attempts
         }
       } catch (error) {
         console.error('Error getting token for socket connection:', error);
@@ -155,7 +157,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (!isSignedIn) {
-      socket.disconnect();
+      s.disconnect();
     }
 
   }, [isSignedIn, getToken, isConnected]);

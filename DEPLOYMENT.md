@@ -32,7 +32,24 @@ absent, the socket is `null` and all consumers (socket-provider, hooks)
 skip initialization gracefully. Cloud functionality still works when the
 variable is provided.
 
-### 2. `.env` removed from git tracking (`.gitignore`)
+### 2. Clerk authentication removed
+
+**Problem:** The upstream project uses Clerk (`@clerk/nextjs`) for user
+authentication. Even with `NEXT_PUBLIC_USER_MANAGEMENT="false"`, Clerk
+required valid API keys at initialization — without them every route
+returned 500.
+
+**Fix:** `@clerk/nextjs` is fully removed from dependencies. All imports
+are replaced with `lib/clerk-shim.ts` — a local file providing no-op
+stubs for `useAuth`, `useUser`, `SignedIn`, `UserButton`, and `SignIn`.
+The middleware is a simple pass-through (`NextResponse.next()`).
+No Clerk account or API keys are needed.
+
+To re-enable Clerk: delete `lib/clerk-shim.ts`, restore `@clerk/nextjs`
+in `package.json`, and replace all `@/lib/clerk-shim` imports back to
+`@clerk/nextjs` (search the codebase for `clerk-shim`).
+
+### 3. `.env` removed from git tracking (`.gitignore`)
 
 **Problem:** `.env` was tracked by git. Running `git pull` or
 `git reset --hard` on the server would overwrite server-specific
@@ -62,10 +79,6 @@ COMFY_OUTPUT_DIR="/path/to/ComfyUI/output"
 COMFYUI_API_URL="127.0.0.1:8188"
 COMFYUI_SECURE="false"
 
-# Clerk keys are required by middleware even when user management is off
-CLERK_SECRET_KEY="sk_test_..."
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
-
 # Disable cloud and user management
 NEXT_PUBLIC_USER_MANAGEMENT="false"
 NEXT_PUBLIC_VIEW_COMFY_CLOUD="false"
@@ -74,17 +87,7 @@ NEXT_PUBLIC_VIEW_MODE="false"
 # Cloud settings — commented out, not needed for local deployment
 #NEXT_PUBLIC_CLOUD_WS_URL="http://localhost:8000"
 #NEXT_PUBLIC_API_URL="http://your-server:3080"
-#NEXT_PUBLIC_CLERK_SIGN_IN_URL="/login"
-#NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL="/"
-#NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL="/"
 ```
-
-### Why Clerk keys are still needed
-
-The `middleware.ts` imports `clerkMiddleware` unconditionally. Even with
-`NEXT_PUBLIC_USER_MANAGEMENT="false"` (which makes the middleware pass all
-requests through), Clerk requires valid keys at initialization. Without them
-every route returns 500.
 
 ## Deploying updates
 

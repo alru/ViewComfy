@@ -1,4 +1,4 @@
-import { SquareTerminal, LifeBuoy, FileJson, Cloud, SquarePlay } from "lucide-react"
+import { SquareTerminal, LifeBuoy, FileJson, Cloud, SquarePlay, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TooltipButton } from "@/components/ui/tooltip-button"
 import Link from "next/link";
@@ -8,7 +8,8 @@ import { SettingsService } from "@/app/services/settings-service";
 export enum TabValue {
     Playground = 'playground',
     Apps = 'apps',
-    Editor = 'editor'
+    Editor = 'editor',
+    App = 'app'
 }
 
 interface SidebarProps {
@@ -84,6 +85,13 @@ export function Sidebar({ currentTab, onTabChange, deployWindow, onDeployWindow 
                             label="Playground"
                             isActive={currentTab === TabValue.Playground}
                             onClick={() => onTabChange(TabValue.Playground)}
+                            isSmallScreen={isSmallScreen}
+                        />
+                        <SidebarButton
+                            icon={<Users className="size-5" />}
+                            label="User App"
+                            isActive={currentTab === TabValue.App}
+                            onClick={() => onTabChange(TabValue.App)}
                             isSmallScreen={isSmallScreen}
                         />
                         <SidebarButton

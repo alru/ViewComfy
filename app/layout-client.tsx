@@ -6,7 +6,7 @@ import { TopNav } from '@/components/top-nav';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from '@/components/ui/sidebar';
 import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
-import { FileJson, SquarePlay, SquareTerminal } from 'lucide-react';
+import { FileJson, SquarePlay, SquareTerminal, Users } from 'lucide-react';
 import Link from 'next/link';
 import { ImageComparisonProvider } from "@/components/comparison/image-comparison-provider";
 import dynamic from "next/dynamic";
@@ -111,6 +111,15 @@ export function AppSidebar() {
     url: isPlaygroundRouteEnabled ? "" : "/playground",
     icon: SquareTerminal,
   });
+
+  // Show User App link in Editor mode (not running in ViewComfy cloud)
+  if (!settingsService.getIsRunningInViewComfy() && !settingsService.getIsViewMode()) {
+    items.push({
+      title: "App",
+      url: "/app",
+      icon: Users,
+    });
+  }
 
   return (
     <Sidebar className={"mt-2"}>

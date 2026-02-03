@@ -2084,6 +2084,9 @@ function EditFieldDialog(props: {
             case "audio":
                 setDefaultValue(null);
                 break;
+            case "checkpoint":
+                setDefaultValue(current.value ?? "");
+                break;
             case "long-text":
             case "string":
             default:
@@ -2105,6 +2108,7 @@ function EditFieldDialog(props: {
         { label: "Float", value: "float" },
         { label: "CheckBox", value: "boolean" },
         { label: "Seed", value: "seed" },
+        { label: "Checkpoint", value: "checkpoint" },
     ];
 
     const parseSelectOptions = (text: string): { label: string, value: string }[] => {
@@ -2198,6 +2202,9 @@ function EditFieldDialog(props: {
             case "audio": {
                 break;
             }
+            case "checkpoint": {
+                break;
+            }
             case "boolean": {
                 break;
             }
@@ -2270,6 +2277,10 @@ function EditFieldDialog(props: {
             case "video":
             case "audio": {
                 computedDefault = null;
+                break;
+            }
+            case "checkpoint": {
+                computedDefault = String(defaultValue ?? "");
                 break;
             }
             default: {

@@ -160,6 +160,29 @@ export function workflowAPItoViewComfy(source: WorkflowApiJSON): IViewComfyBase 
 
                     break;
 
+                case "CheckpointLoaderSimple":
+                case "CheckpointLoaderSimpleShared //Inspire":
+                    const ckptInput = inputs.find(i => i.title === 'Ckpt_name');
+                    if (ckptInput) {
+                        ckptInput.valueType = "checkpoint";
+                        ckptInput.title = getTitleFromValue(value.class_type, value);
+                        ckptInput.placeholder = "Select checkpoint...";
+                        ckptInput.options = []; // Will be loaded dynamically
+
+                        finalInput = {
+                            title: getTitleFromValue(value.class_type, value),
+                            inputs: [ckptInput],
+                            key: `${key}-${value.class_type}`
+                        };
+
+                        if (isViewComfyInput(value._meta?.title)) {
+                            basicViewComfyInputs.push(finalInput);
+                        } else {
+                            basicInputs.push(finalInput);
+                        }
+                    }
+                    break;
+
                 default:
 
                     for (const input of inputs) {
@@ -248,7 +271,7 @@ function parseInputField(args: { node: { key: string, value: any }, path: string
     return input;
 }
 
-export type InputValueType = "string" | "number" | "bigint" | "boolean" | "float" | "image";
+export type InputValueType = "string" | "number" | "bigint" | "boolean" | "float" | "image" | "checkpoint";
 
  
 function parseValueType(value: any): InputValueType {

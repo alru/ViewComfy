@@ -57,6 +57,7 @@ import { ActionType, useViewComfy } from "@/app/providers/view-comfy-provider";
 import { MaskEditor } from "@/components/ui/mask-editor";
 import { ImageMasked } from "@/app/models/prompt-result";
 import { useBoundStore } from "@/stores/bound-store";
+import { useCheckpoints } from "@/hooks/use-checkpoints";
 import { IWorkflow } from "@/app/interfaces/workflow";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -1012,6 +1013,12 @@ function InputFieldToUI(args: {
         }
     }
 
+    if (input.valueType === "checkpoint") {
+        return (
+            <FormCheckpointInput input={input} field={field} editMode={editMode} remove={remove} toggleVisibility={toggleVisibility} index={index} setShowEditDialog={setShowEditDialog} />
+        )
+    }
+
     if (input.valueType === "slider") {
         return (
             <FormSliderInput input={input} field={field} editMode={editMode} remove={remove} toggleVisibility={toggleVisibility} index={index} setShowEditDialog={setShowEditDialog} />
@@ -1760,6 +1767,110 @@ function FormComboboxInput(args: { input: IInputForm, field: any, editMode?: boo
     )
 }
 
+function FormCheckpointInput(args: { input: IInputForm, field: any, editMode?: boolean, remove?: (index: number) => void, toggleVisibility?: (index: number) => void, index: number, setShowEditDialog: (value: IEditFieldDialog | undefined) => void }) {
+    const { input, field, editMode, remove, toggleVisibility, index, setShowEditDialog } = args;
+    const { checkpoints, loading, error } = useCheckpoints();
+    const [open, setOpen] = useState(false);
+    const [buttonWidth, setButtonWidth] = useState<number>(0);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+
+    const options = checkpoints.map(ckpt => ({ label: ckpt, value: ckpt }));
+    const [value, setValue] = useState(field.value);
+
+    const handleOnSelect = (opt: { label: string; value: string }) => {
+        setValue(opt.value);
+        field.onChange(opt.value);
+    }
+
+    useEffect(() => {
+        if (buttonRef.current) {
+            const width = buttonRef.current.offsetWidth;
+            setButtonWidth(width);
+        }
+    }, [value, open]);
+
+    return (
+        <FormItem key={input.id}>
+            <FormLabel className={FORM_STYLE.label}>{input.title}
+                {input.tooltip && (
+                    <Tooltip>
+                        <TooltipTrigger className="">
+                            <Info className="h-4 w-4" onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }} />
+                        </TooltipTrigger>
+                        <TooltipContent className="text-center whitespace-pre-wrap">
+                            <p>
+                                {input.tooltip}
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>)}
+                {editMode && (
+                    <FieldActionButtons remove={remove} toggleVisibility={toggleVisibility} index={index} setShowEditDialog={setShowEditDialog} input={input} field={field} />
+                )}
+            </FormLabel>
+            <FormControl>
+                {loading ? (
+                    <div className="text-sm text-muted-foreground">Loading checkpoints...</div>
+                ) : error ? (
+                    <div className="text-sm text-destructive">Failed to load checkpoints</div>
+                ) : (
+                    <Popover open={open} onOpenChange={setOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                type="button"
+                                ref={buttonRef}
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={open}
+                                className="justify-between min-w-[200px]"
+                            >
+                                {value
+                                    ? options.find((opt) => opt.value === value)?.label || value
+                                    : "Select checkpoint..."}
+                                <ChevronsUpDown className="opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                            className="p-0"
+                            style={{ width: buttonWidth > 0 ? `${buttonWidth}px` : '400px' }}
+                        >
+                            <Command>
+                                <CommandInput placeholder="Search checkpoints..." className="h-9" />
+                                <CommandList>
+                                    <CommandEmpty>No checkpoint found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {options.map((opt) => (
+                                            <CommandItem
+                                                key={opt.value}
+                                                keywords={[opt.label]}
+                                                value={opt.value}
+                                                onSelect={() => {
+                                                    handleOnSelect(opt);
+                                                    setOpen(false)
+                                                }}
+                                            >
+                                                {opt.label}
+                                                <Check
+                                                    className={cn(
+                                                        "ml-auto",
+                                                        value === opt.value ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                />
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                )}
+            </FormControl>
+            <FormMessage />
+        </FormItem>
+    )
+}
 
 
 function FormSliderInput(args: { input: IInputForm, field: any, editMode?: boolean, remove?: (index: number) => void, toggleVisibility?: (index: number) => void, index: number, setShowEditDialog: (value: IEditFieldDialog | undefined) => void }) {

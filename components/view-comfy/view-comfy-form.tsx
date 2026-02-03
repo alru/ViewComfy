@@ -387,7 +387,7 @@ export function ViewComfyForm(args: {
                                                                             <SelectValue />
                                                                         </SelectTrigger>
                                                                         <SelectContent className={"max-h-[300px]"}>
-                                                                            {workflows?.map((workflow) => {
+                                                                            {workflows?.toSorted((a, b) => a.name.localeCompare(b.name)).map((workflow) => {
                                                                                 return <SelectItem key={workflow.id} value={workflow.apiUrl}>{workflow.name}</SelectItem>
                                                                             })}
                                                                         </SelectContent>

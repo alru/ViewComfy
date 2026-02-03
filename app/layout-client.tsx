@@ -112,8 +112,8 @@ export function AppSidebar() {
     icon: SquareTerminal,
   });
 
-  // Show User App link in Editor mode (not running in ViewComfy cloud)
-  if (!settingsService.getIsRunningInViewComfy() && !settingsService.getIsViewMode()) {
+  // Show User App link (for self-hosted deployments)
+  if (!settingsService.getIsRunningInViewComfy()) {
     items.push({
       title: "App",
       url: "/app",

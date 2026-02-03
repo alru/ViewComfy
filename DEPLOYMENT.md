@@ -39,15 +39,15 @@ dropdown. Users can switch models without editing the workflow JSON.
 
 A dedicated route for end users that always loads `view_comfy.json` regardless
 of `NEXT_PUBLIC_VIEW_MODE`. This solves the mutual exclusivity problem where
-admins couldn't use Editor mode while giving users access to the playground.
+Editor mode (`VIEW_MODE=false`) hides the playground content.
 
-- `/editor` — admin workflow editor (requires editor access)
-- `/playground` — admin preview (requires editor access)
-- `/app` — user-facing app (always available, loads view_comfy.json)
+- `/editor` — workflow editor
+- `/playground` — preview/testing area
+- `/app` — user-facing app (always loads view_comfy.json)
 
-The `/app` route has a clean sidebar showing only the "App" link, hiding
-Editor and Playground to prevent 403 errors from Next.js prefetching for
-users without editor access.
+The `/app` route has a simplified sidebar showing only the "App" link. This is
+useful when you restrict `/editor` and `/playground` access externally (e.g.
+via NGINX auth) — it prevents Next.js prefetch requests to restricted routes.
 
 **Files changed:**
 - `app/app/page.tsx` — new route entry point

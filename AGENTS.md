@@ -88,6 +88,7 @@ These rules apply when editing `view_comfy.json` / “ViewComfy JSON” structur
 - **Never touch `workflowApiJSON`; only modify `viewComfyJSON`.**
 - When moving/removing inputs, move/remove the entire object (not partial).
 - For `valueType: "select"`, `options[]` is required (label/value pairs).
+- For `valueType: "checkpoint"`, options are loaded dynamically from ComfyUI via `/api/comfy/checkpoints`. No `options[]` needed in JSON.
 
 ## Code style (pragmatic, repo-aligned)
 This repo contains a mix of formatting styles across files. Follow these rules:

@@ -3,6 +3,9 @@
 > **This is a fork of [ViewComfy/ViewComfy](https://github.com/ViewComfy/ViewComfy) for fully local, self-hosted deployments.**
 > Clerk authentication and ViewComfy Cloud dependencies have been removed so you can run ViewComfy on your own server with just a local ComfyUI instance — no external accounts or API keys required. Authentication is handled externally (e.g. NGINX basic auth). See [DEPLOYMENT.md](DEPLOYMENT.md) for setup details.
 
+**Fork improvements:**
+- Dynamic checkpoint selection — fetches available models from ComfyUI, no hardcoding needed
+
 ---
 
 # ViewComfy
@@ -38,6 +41,7 @@ Supported input types:
 - Images
 - Videos
 - Audio
+- Checkpoints (dynamic list from ComfyUI)
 
 Inputs can be required or optional. It is also possible to add helper text to guide users. 
 

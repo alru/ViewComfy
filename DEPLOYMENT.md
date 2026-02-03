@@ -28,6 +28,13 @@ To re-enable Clerk: delete `lib/clerk-shim.ts`, add `@clerk/nextjs` back to
 Each deployment maintains its own `.env` independently — `git pull` will
 never overwrite it.
 
+### 4. Dynamic checkpoint selection
+
+New input type `valueType: "checkpoint"` for CheckpointLoader nodes. Instead
+of hardcoding model names, the editor fetches available checkpoints from
+ComfyUI via `/api/comfy/checkpoints` and displays them in a searchable
+dropdown. Users can switch models without editing the workflow JSON.
+
 ## Minimal .env
 
 ```env

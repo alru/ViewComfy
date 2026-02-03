@@ -97,7 +97,8 @@ export function AppSidebar() {
       });
     }
   } else {
-    if (!settingsService.getIsViewMode()) {
+    // Don't show Editor link on /app route (user-facing page)
+    if (!settingsService.getIsViewMode() && pathname !== "/app") {
       items.push({
         title: "Editor",
         url: "/editor",
@@ -106,11 +107,14 @@ export function AppSidebar() {
     }
   };
 
-  items.push({
-    title: "Playground",
-    url: isPlaygroundRouteEnabled ? "" : "/playground",
-    icon: SquareTerminal,
-  });
+  // Don't show Playground on /app route (user-facing page)
+  if (pathname !== "/app") {
+    items.push({
+      title: "Playground",
+      url: isPlaygroundRouteEnabled ? "" : "/playground",
+      icon: SquareTerminal,
+    });
+  }
 
   // Show User App link (for self-hosted deployments)
   if (!settingsService.getIsRunningInViewComfy()) {

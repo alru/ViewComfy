@@ -35,6 +35,30 @@ of hardcoding model names, the editor fetches available checkpoints from
 ComfyUI via `/api/comfy/checkpoints` and displays them in a searchable
 dropdown. Users can switch models without editing the workflow JSON.
 
+### 5. User-facing `/app` route
+
+A dedicated route for end users that always loads `view_comfy.json` regardless
+of `NEXT_PUBLIC_VIEW_MODE`. This solves the mutual exclusivity problem where
+admins couldn't use Editor mode while giving users access to the playground.
+
+- `/editor` — admin workflow editor (requires editor access)
+- `/playground` — admin preview (requires editor access)
+- `/app` — user-facing app (always available, loads view_comfy.json)
+
+The `/app` route has a clean sidebar showing only the "App" link, hiding
+Editor and Playground to prevent 403 errors from Next.js prefetching for
+users without editor access.
+
+**Files changed:**
+- `app/app/page.tsx` — new route entry point
+- `components/pages/app/user-app-page.tsx` — simplified playground without viewMode check
+- `app/layout-client.tsx` — sidebar logic for conditional link visibility
+
+### 6. Alphabetical workflow sorting
+
+Workflow dropdown in Playground now sorts workflows alphabetically by name
+for easier navigation when you have many workflows configured.
+
 ## Minimal .env
 
 ```env

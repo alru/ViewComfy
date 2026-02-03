@@ -5,6 +5,8 @@
 
 **Fork improvements:**
 - Dynamic checkpoint selection — fetches available models from ComfyUI, no hardcoding needed
+- User-facing `/app` route — dedicated page for end users, independent of VIEW_MODE setting
+- Alphabetical workflow sorting — workflows dropdown sorted by name for easier navigation
 
 ---
 

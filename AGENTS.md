@@ -89,6 +89,7 @@ These rules apply when editing `view_comfy.json` / “ViewComfy JSON” structur
 - When moving/removing inputs, move/remove the entire object (not partial).
 - For `valueType: "select"`, `options[]` is required (label/value pairs).
 - For `valueType: "checkpoint"`, options are loaded dynamically from ComfyUI via `/api/comfy/checkpoints`. No `options[]` needed in JSON.
+- **Input reordering** - In edit mode, use ChevronUp/ChevronDown buttons to reorder inputs within a section (Basic/Advanced). Use MoveUp/MoveDown to move between sections.
 
 ## Code style (pragmatic, repo-aligned)
 This repo contains a mix of formatting styles across files. Follow these rules:

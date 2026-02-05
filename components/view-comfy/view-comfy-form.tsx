@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CHECKBOX_STYLE, FORM_STYLE, TEXT_AREA_STYLE } from "@/components/styles";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Info, Check, SquarePen, MoveUp, MoveDown, Brush, Undo2, Eye, EyeOff } from "lucide-react";
+import { Trash2, Info, Check, SquarePen, MoveUp, MoveDown, Brush, Undo2, Eye, EyeOff, ChevronUp, ChevronDown } from "lucide-react";
 import { Dropzone } from "@/components/ui/dropzone";
 import { ChevronsUpDown } from "lucide-react"
 import {
@@ -539,6 +539,72 @@ export function ViewComfyForm(args: {
                                                                                 size="icon"
                                                                                 variant="ghost"
                                                                                 className="text-muted-foreground"
+                                                                                disabled={index === 0}
+                                                                                onClick={(e) => {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    try {
+                                                                                        const currentValues = form.getValues();
+                                                                                        const newInputs = [...currentValues.inputs];
+                                                                                        [newInputs[index - 1], newInputs[index]] = [newInputs[index], newInputs[index - 1]];
+                                                                                        form.setValue('inputs', newInputs);
+                                                                                        handleSaveSubmit({
+                                                                                            ...currentValues,
+                                                                                            inputs: newInputs
+                                                                                        });
+                                                                                    } catch (err) {
+                                                                                        console.error("Failed to move up", err);
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                <ChevronUp />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>Move Up</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Button
+                                                                                type="button"
+                                                                                size="icon"
+                                                                                variant="ghost"
+                                                                                className="text-muted-foreground"
+                                                                                disabled={index === inputFieldArray.fields.length - 1}
+                                                                                onClick={(e) => {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    try {
+                                                                                        const currentValues = form.getValues();
+                                                                                        const newInputs = [...currentValues.inputs];
+                                                                                        [newInputs[index], newInputs[index + 1]] = [newInputs[index + 1], newInputs[index]];
+                                                                                        form.setValue('inputs', newInputs);
+                                                                                        handleSaveSubmit({
+                                                                                            ...currentValues,
+                                                                                            inputs: newInputs
+                                                                                        });
+                                                                                    } catch (err) {
+                                                                                        console.error("Failed to move down", err);
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                <ChevronDown />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>Move Down</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Button
+                                                                                type="button"
+                                                                                size="icon"
+                                                                                variant="ghost"
+                                                                                className="text-muted-foreground"
                                                                                 onClick={() => handleRemoveInput({ groupIndex: index })}
                                                                             >
                                                                                 <Trash2 className="size-5" />
@@ -841,6 +907,70 @@ function AdvancedInputSection(args: {
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     <p>Move to Basic Inputs</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="text-muted-foreground"
+                                                        disabled={index === 0}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            try {
+                                                                const currentValues = form.getValues();
+                                                                const newAdvancedInputs = [...(currentValues.advancedInputs || [])];
+                                                                [newAdvancedInputs[index - 1], newAdvancedInputs[index]] = [newAdvancedInputs[index], newAdvancedInputs[index - 1]];
+                                                                form.setValue('advancedInputs', newAdvancedInputs);
+                                                                handleSaveSubmit({
+                                                                    ...currentValues,
+                                                                    advancedInputs: newAdvancedInputs
+                                                                });
+                                                            } catch (err) {
+                                                                console.error("Failed to move up", err);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <ChevronUp />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Move Up</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="text-muted-foreground"
+                                                        disabled={index === advancedFieldArray.fields.length - 1}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            try {
+                                                                const currentValues = form.getValues();
+                                                                const newAdvancedInputs = [...(currentValues.advancedInputs || [])];
+                                                                [newAdvancedInputs[index], newAdvancedInputs[index + 1]] = [newAdvancedInputs[index + 1], newAdvancedInputs[index]];
+                                                                form.setValue('advancedInputs', newAdvancedInputs);
+                                                                handleSaveSubmit({
+                                                                    ...currentValues,
+                                                                    advancedInputs: newAdvancedInputs
+                                                                });
+                                                            } catch (err) {
+                                                                console.error("Failed to move down", err);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <ChevronDown />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Move Down</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                             <Tooltip>

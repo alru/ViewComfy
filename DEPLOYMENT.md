@@ -28,36 +28,23 @@ To re-enable Clerk: delete `lib/clerk-shim.ts`, add `@clerk/nextjs` back to
 Each deployment maintains its own `.env` independently — `git pull` will
 never overwrite it.
 
-### 4. Dynamic checkpoint selection
+### 4. Editor & UI improvements
 
-New input type `valueType: "checkpoint"` for CheckpointLoader nodes. Instead
-of hardcoding model names, the editor fetches available checkpoints from
-ComfyUI via `/api/comfy/checkpoints` and displays them in a searchable
-dropdown. Users can switch models without editing the workflow JSON.
+- **Dynamic checkpoint selection** — `valueType: "checkpoint"` fetches models from ComfyUI's `/object_info` API instead of hardcoding names.
+- **Input reordering** — ChevronUp/ChevronDown buttons to reorder inputs within sections.
+- **Alphabetical workflow sorting** — easier navigation with many workflows.
 
 ### 5. User-facing `/app` route
 
-A dedicated route for end users that always loads `view_comfy.json` regardless
-of `NEXT_PUBLIC_VIEW_MODE`. This solves the mutual exclusivity problem where
-Editor mode (`VIEW_MODE=false`) hides the playground content.
+Dedicated route for end users that always loads `view_comfy.json` regardless of `NEXT_PUBLIC_VIEW_MODE`. Solves the problem where Editor mode (`VIEW_MODE=false`) hides playground content.
 
-- `/editor` — workflow editor
-- `/playground` — preview/testing area
-- `/app` — user-facing app (always loads view_comfy.json)
+| Route | Purpose |
+|-------|---------|
+| `/editor` | Workflow editor |
+| `/playground` | Preview/testing |
+| `/app` | User-facing app |
 
-The `/app` route has a simplified sidebar showing only the "App" link. This is
-useful when you restrict `/editor` and `/playground` access externally (e.g.
-via NGINX auth) — it prevents Next.js prefetch requests to restricted routes.
-
-**Files changed:**
-- `app/app/page.tsx` — new route entry point
-- `components/pages/app/user-app-page.tsx` — simplified playground without viewMode check
-- `app/layout-client.tsx` — sidebar logic for conditional link visibility
-
-### 6. Alphabetical workflow sorting
-
-Workflow dropdown in Playground now sorts workflows alphabetically by name
-for easier navigation when you have many workflows configured.
+The `/app` route has a simplified sidebar (only "App" link visible). Useful when `/editor` and `/playground` are restricted via NGINX auth — prevents Next.js prefetch requests to restricted routes.
 
 ## Minimal .env
 

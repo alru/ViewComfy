@@ -32,15 +32,30 @@ export interface IMultiValueInput {
 
 export interface WorkflowApiJSON {
     [key: string]: {
-         
+
         inputs: { [key: string]: any };
         class_type: string;
         _meta: { title: string };
     };
 }
 
+export type ComfyObjectInfo = Record<string, {
+    input?: {
+        required?: Record<string, any>;
+        optional?: Record<string, any>;
+    };
+}>;
 
-export function workflowAPItoViewComfy(source: WorkflowApiJSON): IViewComfyBase {
+// Input names that hold file/model paths — these should not become selects
+// because the available files differ per ComfyUI instance.
+const FILE_PATH_INPUT_NAMES = new Set([
+    'ckpt_name', 'vae_name', 'lora_name', 'clip_name',
+    'unet_name', 'model_name', 'control_net_name',
+    'style_model_name', 'gligen_name', 'hypernetwork_name',
+]);
+
+
+export function workflowAPItoViewComfy(source: WorkflowApiJSON, objectInfo?: ComfyObjectInfo): IViewComfyBase {
     let basicInputs: IMultiValueInput[] = [];
     let advancedInputs: IMultiValueInput[] = [];
 
@@ -50,8 +65,12 @@ export function workflowAPItoViewComfy(source: WorkflowApiJSON): IViewComfyBase 
 
     for (const [key, value] of Object.entries(source)) {
         const inputs: IInputField[] = [];
+        const nodeInfo = objectInfo?.[value.class_type];
+        const objectInfoInputs = nodeInfo?.input
+            ? { ...nodeInfo.input.required, ...nodeInfo.input.optional }
+            : undefined;
         for (const node of Object.entries(value.inputs)) {
-            const input = parseInputField({ node: { key: node[0], value: node[1] }, path: [key, "inputs"] });
+            const input = parseInputField({ node: { key: node[0], value: node[1] }, path: [key, "inputs"], objectInfoInputs });
             if (input) {
                 inputs.push(input);
             }
@@ -232,8 +251,8 @@ export function workflowAPItoViewComfy(source: WorkflowApiJSON): IViewComfyBase 
 }
 
  
-function parseInputField(args: { node: { key: string, value: any }, path: string[] }): IInputField | undefined {
-    const { node, path } = args;
+function parseInputField(args: { node: { key: string, value: any }, path: string[], objectInfoInputs?: Record<string, any> }): IInputField | undefined {
+    const { node, path, objectInfoInputs } = args;
     let input: IInputField | undefined = undefined;
 
     if (Array.isArray(node.value)) {
@@ -259,6 +278,18 @@ function parseInputField(args: { node: { key: string, value: any }, path: string
                 validations: { required: isRequired() },
                 key: workflowPath.join("-"),
             };
+
+            // Enrich with combo options from object_info
+            if (objectInfoInputs && !FILE_PATH_INPUT_NAMES.has(node.key)) {
+                const infoDef = objectInfoInputs[node.key];
+                if (Array.isArray(infoDef) && Array.isArray(infoDef[0])) {
+                    input.valueType = "select";
+                    input.options = infoDef[0].map((opt: string) => ({
+                        label: String(opt),
+                        value: String(opt)
+                    }));
+                }
+            }
         }
         else if (typeof node.value === 'object' && node.value !== null) {
             // TODO: Handle nested objects

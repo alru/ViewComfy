@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Dropzone } from '@/components/ui/dropzone';
 import ViewComfyFormEditor from '@/components/pages/view-comfy/view-comfy-form-editor';
 import { workflowAPItoViewComfy } from '@/lib/workflow-api-parser';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ActionType, type IViewComfy, type IViewComfyBase, type IViewComfyJSON, useViewComfy } from '@/app/providers/view-comfy-provider';
+import { useObjectInfo } from '@/hooks/use-object-info';
 import { Label } from '@/components/ui/label';
 import { ErrorAlertDialog } from '@/components/ui/error-alert-dialog';
 import WorkflowSwitcher from '@/components/workflow-switchter';
@@ -22,6 +23,9 @@ export default function ViewComfyPage() {
 
     const [file, setFile] = useState<File | null>(null);
     const { viewComfyState, viewComfyStateDispatcher } = useViewComfy();
+    const { objectInfo } = useObjectInfo();
+    const objectInfoRef = useRef(objectInfo);
+    objectInfoRef.current = objectInfo;
     const [errorDialog, setErrorDialog] = useState<{ open: boolean, error: Error | undefined }>({ open: false, error: undefined });
     const [appTitle, setAppTitle] = useState<string>(viewComfyState.appTitle || "");
     const [appImg, setAppImg] = useState<string>(viewComfyState.appImg || "");
@@ -73,7 +77,7 @@ export default function ViewComfyPage() {
                     else {
                         viewComfyStateDispatcher({
                             type: ActionType.SET_VIEW_COMFY_DRAFT,
-                            payload: { viewComfyJSON: workflowAPItoViewComfy(parsed), workflowApiJSON: parsed, file }
+                            payload: { viewComfyJSON: workflowAPItoViewComfy(parsed, objectInfoRef.current ?? undefined), workflowApiJSON: parsed, file }
                         });
                     }
                 } catch (error) {

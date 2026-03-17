@@ -2,7 +2,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Dropzone } from '@/components/ui/dropzone';
 import ViewComfyFormEditor from '@/components/pages/view-comfy/view-comfy-form-editor';
-import { workflowAPItoViewComfy } from '@/lib/workflow-api-parser';
+import { workflowAPItoViewComfy, type WorkflowApiJSON } from '@/lib/workflow-api-parser';
 import { useState, useEffect, useRef } from 'react';
 import { ActionType, type IViewComfy, type IViewComfyBase, type IViewComfyJSON, useViewComfy } from '@/app/providers/view-comfy-provider';
 import { useObjectInfo } from '@/hooks/use-object-info';
@@ -25,6 +25,7 @@ export default function ViewComfyPage() {
     const { viewComfyState, viewComfyStateDispatcher } = useViewComfy();
     const { objectInfo } = useObjectInfo();
     const objectInfoRef = useRef(objectInfo);
+    const hadObjectInfoOnFirstParse = useRef(false);
     objectInfoRef.current = objectInfo;
     const [errorDialog, setErrorDialog] = useState<{ open: boolean, error: Error | undefined }>({ open: false, error: undefined });
     const [appTitle, setAppTitle] = useState<string>(viewComfyState.appTitle || "");
@@ -59,6 +60,24 @@ export default function ViewComfyPage() {
     }, [viewComfyState.appImg]);
 
 
+    // Re-parse workflow when objectInfo arrives after the workflow was already loaded without it
+    useEffect(() => {
+        if (hadObjectInfoOnFirstParse.current) return;
+        const workflowApi = viewComfyState.viewComfyDraft?.workflowApiJSON;
+        if (objectInfo && workflowApi) {
+            hadObjectInfoOnFirstParse.current = true;
+            viewComfyStateDispatcher({
+                type: ActionType.SET_VIEW_COMFY_DRAFT,
+                payload: {
+                    viewComfyJSON: workflowAPItoViewComfy(workflowApi as WorkflowApiJSON, objectInfo),
+                    workflowApiJSON: workflowApi,
+                    file: viewComfyState.viewComfyDraft?.file
+                }
+            });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [objectInfo]);
+
     useEffect(() => {
         if (file) {
             const reader = new FileReader();
@@ -75,6 +94,9 @@ export default function ViewComfyPage() {
                         throw new WorkflowJSONError();
                     }
                     else {
+                        if (objectInfoRef.current) {
+                            hadObjectInfoOnFirstParse.current = true;
+                        }
                         viewComfyStateDispatcher({
                             type: ActionType.SET_VIEW_COMFY_DRAFT,
                             payload: { viewComfyJSON: workflowAPItoViewComfy(parsed, objectInfoRef.current ?? undefined), workflowApiJSON: parsed, file }

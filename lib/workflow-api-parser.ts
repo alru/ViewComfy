@@ -279,12 +279,16 @@ function parseInputField(args: { node: { key: string, value: any }, path: string
                 key: workflowPath.join("-"),
             };
 
-            // Enrich with combo options from object_info
+            // Enrich with combo options from object_info.
+            // Two formats exist:
+            //   Standard nodes: [["euler", "heun", ...], {tooltip: "..."}]
+            //   Custom nodes:   ["COMBO", {options: ["euler", ...]}]
             if (objectInfoInputs && !FILE_PATH_INPUT_NAMES.has(node.key)) {
                 const infoDef = objectInfoInputs[node.key];
-                if (Array.isArray(infoDef) && Array.isArray(infoDef[0])) {
+                const comboOptions = extractComboOptions(infoDef);
+                if (comboOptions) {
                     input.valueType = "select";
-                    input.options = infoDef[0].map((opt: string) => ({
+                    input.options = comboOptions.map((opt: string) => ({
                         label: String(opt),
                         value: String(opt)
                     }));
@@ -340,6 +344,20 @@ function getTitleFromValue(class_type: string, value: { _meta?: { title: string 
     } else {
         return value._meta.title;
     }
+}
+
+// Extracts the options array from a combo field definition, handling both formats:
+//   Standard: [["opt1", "opt2", ...], ...]
+//   Custom:   ["COMBO", {options: ["opt1", "opt2", ...]}]
+function extractComboOptions(infoDef: any): string[] | null {
+    if (!Array.isArray(infoDef)) return null;
+    if (Array.isArray(infoDef[0])) {
+        return infoDef[0];
+    }
+    if (infoDef[0] === "COMBO" && Array.isArray(infoDef[1]?.options)) {
+        return infoDef[1].options;
+    }
+    return null;
 }
 
 function isViewComfyInput(title: string) {

@@ -546,7 +546,12 @@ export function ViewComfyForm(args: {
                                                                                     try {
                                                                                         const currentValues = form.getValues();
                                                                                         const newInputs = [...currentValues.inputs];
-                                                                                        [newInputs[index - 1], newInputs[index]] = [newInputs[index], newInputs[index - 1]];
+                                                                                        if (e.ctrlKey) {
+                                                                                            const [item] = newInputs.splice(index, 1);
+                                                                                            newInputs.unshift(item);
+                                                                                        } else {
+                                                                                            [newInputs[index - 1], newInputs[index]] = [newInputs[index], newInputs[index - 1]];
+                                                                                        }
                                                                                         form.setValue('inputs', newInputs);
                                                                                         handleSaveSubmit({
                                                                                             ...currentValues,
@@ -561,7 +566,7 @@ export function ViewComfyForm(args: {
                                                                             </Button>
                                                                         </TooltipTrigger>
                                                                         <TooltipContent>
-                                                                            <p>Move Up</p>
+                                                                            <p>Move Up (Ctrl+click: to top)</p>
                                                                         </TooltipContent>
                                                                     </Tooltip>
 
@@ -579,7 +584,12 @@ export function ViewComfyForm(args: {
                                                                                     try {
                                                                                         const currentValues = form.getValues();
                                                                                         const newInputs = [...currentValues.inputs];
-                                                                                        [newInputs[index], newInputs[index + 1]] = [newInputs[index + 1], newInputs[index]];
+                                                                                        if (e.ctrlKey) {
+                                                                                            const [item] = newInputs.splice(index, 1);
+                                                                                            newInputs.push(item);
+                                                                                        } else {
+                                                                                            [newInputs[index], newInputs[index + 1]] = [newInputs[index + 1], newInputs[index]];
+                                                                                        }
                                                                                         form.setValue('inputs', newInputs);
                                                                                         handleSaveSubmit({
                                                                                             ...currentValues,
@@ -594,7 +604,7 @@ export function ViewComfyForm(args: {
                                                                             </Button>
                                                                         </TooltipTrigger>
                                                                         <TooltipContent>
-                                                                            <p>Move Down</p>
+                                                                            <p>Move Down (Ctrl+click: to bottom)</p>
                                                                         </TooltipContent>
                                                                     </Tooltip>
 
@@ -923,7 +933,12 @@ function AdvancedInputSection(args: {
                                                             try {
                                                                 const currentValues = form.getValues();
                                                                 const newAdvancedInputs = [...(currentValues.advancedInputs || [])];
-                                                                [newAdvancedInputs[index - 1], newAdvancedInputs[index]] = [newAdvancedInputs[index], newAdvancedInputs[index - 1]];
+                                                                if (e.ctrlKey) {
+                                                                    const [item] = newAdvancedInputs.splice(index, 1);
+                                                                    newAdvancedInputs.unshift(item);
+                                                                } else {
+                                                                    [newAdvancedInputs[index - 1], newAdvancedInputs[index]] = [newAdvancedInputs[index], newAdvancedInputs[index - 1]];
+                                                                }
                                                                 form.setValue('advancedInputs', newAdvancedInputs);
                                                                 handleSaveSubmit({
                                                                     ...currentValues,
@@ -938,7 +953,7 @@ function AdvancedInputSection(args: {
                                                     </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    <p>Move Up</p>
+                                                    <p>Move Up (Ctrl+click: to top)</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                             <Tooltip>
@@ -955,7 +970,12 @@ function AdvancedInputSection(args: {
                                                             try {
                                                                 const currentValues = form.getValues();
                                                                 const newAdvancedInputs = [...(currentValues.advancedInputs || [])];
-                                                                [newAdvancedInputs[index], newAdvancedInputs[index + 1]] = [newAdvancedInputs[index + 1], newAdvancedInputs[index]];
+                                                                if (e.ctrlKey) {
+                                                                    const [item] = newAdvancedInputs.splice(index, 1);
+                                                                    newAdvancedInputs.push(item);
+                                                                } else {
+                                                                    [newAdvancedInputs[index], newAdvancedInputs[index + 1]] = [newAdvancedInputs[index + 1], newAdvancedInputs[index]];
+                                                                }
                                                                 form.setValue('advancedInputs', newAdvancedInputs);
                                                                 handleSaveSubmit({
                                                                     ...currentValues,
@@ -970,7 +990,7 @@ function AdvancedInputSection(args: {
                                                     </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    <p>Move Down</p>
+                                                    <p>Move Down (Ctrl+click: to bottom)</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                             <Tooltip>

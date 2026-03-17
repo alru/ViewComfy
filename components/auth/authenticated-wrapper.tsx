@@ -11,8 +11,7 @@ import { useSearchParams } from "next/navigation";
 import { parseAppIdParam } from "@/app/interfaces/unified-app";
 
 export default function AuthenticatedWrapper({ children }: { children: React.ReactNode }) {
-    const router = useRouter();
-    const { isLoaded, userId } = useAuth();
+    const { isLoaded } = useAuth();
     const { setCurrentTeam, currentTeam, setWorkflows } = useBoundStore();
     const { user } = useUser();
     const searchParams = useSearchParams();
@@ -43,12 +42,6 @@ export default function AuthenticatedWrapper({ children }: { children: React.Rea
         };
     }, [workflows, setWorkflows])
 
-    useEffect(() => {
-        if (!userId && isLoaded) {
-            router.push("/login");
-        }
-    }, [userId, isLoaded, router]);
-
     if (!isLoaded) {
         return <div>Loading...</div>;
     }
@@ -62,4 +55,4 @@ export default function AuthenticatedWrapper({ children }: { children: React.Rea
             </ApiAppExecutionProvider>
         </WorkflowDataProvider>
     );
-} 
+}

@@ -301,6 +301,29 @@ export class ComfyUIAPIService {
         }
     }
 
+    // Probe for a companion .txt file with the same base name as the output file.
+    // Returns null if the file doesn't exist — this is expected and not an error.
+    public async tryGetCompanionTextFile({ file }: { file: { [key: string]: string } }): Promise<File | null> {
+        const originalFilename = file.filename || "";
+        if (!originalFilename) return null;
+
+        const lastDot = originalFilename.lastIndexOf('.');
+        if (lastDot === -1) return null;
+
+        const txtFilename = originalFilename.substring(0, lastDot) + '.txt';
+        const txtFile = { ...file, filename: txtFilename };
+        const data = new URLSearchParams({ ...txtFile }).toString();
+
+        try {
+            const response = await fetch(`${this.getUrl("http")}/view?${encodeURI(data)}`);
+            if (!response.ok) return null;
+            const blob = await response.blob();
+            return new File([blob], txtFilename, { type: 'text/plain' });
+        } catch {
+            return null;
+        }
+    }
+
     private parseOutputFiles(data: { [key: string]: unknown }) {
         if (!data.output) {
             return

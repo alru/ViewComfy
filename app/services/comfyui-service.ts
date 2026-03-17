@@ -80,6 +80,21 @@ export class ComfyUIService {
                             controller.enqueue(new TextEncoder().encode(fileNameInfo));
                             controller.enqueue(new Uint8Array(await outputBuffer.arrayBuffer()));
                             controller.enqueue(new TextEncoder().encode("\r\n--BLOB_SEPARATOR--\r\n"));
+
+                            // Probe for a companion .txt file (e.g. seed metadata)
+                            if (!mimeType.startsWith('text/') && typeof file !== "string") {
+                                try {
+                                    const companionTxt = await comfyUIAPIService.tryGetCompanionTextFile({ file });
+                                    if (companionTxt) {
+                                        controller.enqueue(new TextEncoder().encode(`Content-Type: ${companionTxt.type}\r\n\r\n`));
+                                        controller.enqueue(new TextEncoder().encode(`Content-Disposition: attachment; filename="${companionTxt.name}"\r\n\r\n`));
+                                        controller.enqueue(new Uint8Array(await companionTxt.arrayBuffer()));
+                                        controller.enqueue(new TextEncoder().encode("\r\n--BLOB_SEPARATOR--\r\n"));
+                                    }
+                                } catch (error) {
+                                    console.error("Failed to get companion text file", error);
+                                }
+                            }
                         } catch (error) {
                             console.error("Failed to get output file");
                             console.error(error);

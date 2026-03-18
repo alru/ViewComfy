@@ -750,7 +750,7 @@ function useCompanionText(output: IOutput) {
 
 function CompanionTextContent({ output }: { output: IOutput }) {
     const { text } = useCompanionText(output);
-    return <Textarea value={text} readOnly className="w-full text-xs font-mono bg-muted/50 resize-none" rows={6} />;
+    return <pre className="text-xs font-mono whitespace-pre-wrap break-words text-muted-foreground">{text}</pre>;
 }
 
 function CompanionTextDownloadButton({ output }: { output: IOutput }) {

@@ -8,7 +8,8 @@
 import {
     Settings,
     Download,
-    CircleX
+    CircleX,
+    ChevronDown,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -29,6 +30,7 @@ import { cn, getComfyUIRandomSeed } from "@/lib/utils";
 import { createMediaDragHandler } from "@/lib/drag-utils";
 import WorkflowSwitcher from "@/components/workflow-switchter";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { PreviewOutputsImageGallery } from "@/components/images-preview"
 import dynamic from "next/dynamic";
 import {
@@ -66,10 +68,21 @@ interface IResults {
 
 const apiErrorHandler = new ApiErrorHandler();
 
+interface IDisplayItem {
+    output: IOutput;
+    companionText?: IOutput;
+    promptId: string;
+}
+
 const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getBaseName = (filename: string): string => {
+    const lastDot = filename.lastIndexOf('.');
+    return lastDot > 0 ? filename.substring(0, lastDot) : filename;
 };
 
 const getOutputFileName = (output: { file: File | S3FilesData, url: string }): string => {
@@ -88,6 +101,31 @@ const getOutputContentType = (output: IOutput): string => {
     }
 }
 
+function buildDisplayItems(results: IResults): IDisplayItem[] {
+    const items: IDisplayItem[] = [];
+    for (const [promptId, generation] of Object.entries(results)) {
+        if (generation.status === "error") continue;
+        const outputs = generation.outputs;
+        const paired = new Set<number>();
+        for (let i = 0; i < outputs.length; i++) {
+            if (paired.has(i)) continue;
+            const contentType = getOutputContentType(outputs[i]);
+            if (contentType.startsWith('text/')) continue;
+            let companion: IOutput | undefined;
+            if (i + 1 < outputs.length) {
+                const nextType = getOutputContentType(outputs[i + 1]);
+                if (nextType.startsWith('text/') &&
+                    getBaseName(getOutputFileName(outputs[i])) === getBaseName(getOutputFileName(outputs[i + 1]))) {
+                    companion = outputs[i + 1];
+                    paired.add(i + 1);
+                }
+            }
+            items.push({ output: outputs[i], companionText: companion, promptId });
+        }
+    }
+    return items;
+}
+
 export default function UserAppPage() {
     const { doPost, loading, setLoading } = usePostPlayground();
     const [results, setResults] = useState<IResults>({});
@@ -95,6 +133,7 @@ export default function UserAppPage() {
     const [errorAlertDialog, setErrorAlertDialog] = useState<{ open: boolean, errorTitle: string | undefined, errorDescription: React.JSX.Element, onClose: () => void }>({ open: false, errorTitle: undefined, errorDescription: <></>, onClose: () => { } });
     const [textOutputEnabled, setTextOutputEnabled] = useState(false);
     const [showOutputFileName, setShowOutputFileName] = useState(false);
+    const displayItems = useMemo(() => buildDisplayItems(results), [results]);
     const [permission, setPermission] = useState<"default" | "granted" | "denied">("default");
     const [isRequesting, setIsRequesting] = useState(false);
     const isNotificationAvailable = typeof window !== 'undefined' && 'Notification' in window;
@@ -358,30 +397,28 @@ export default function UserAppPage() {
                             )}
                             <div className="flex-1 h-full p-4 flex overflow-y-auto">
                                 <div className="flex flex-col w-full h-full">
-                                    <GeneratingIndicator loading={loading} />
-                                    {Object.entries(results).map(([promptId, generation], index, array) => (
-                                        <div className="flex flex-col gap-4 w-full h-full" key={promptId}>
-                                            <div className="flex flex-wrap w-full h-full gap-4 pt-4">
-                                                {generation.status === "error" && (
-                                                    <GenerationError
-                                                        generation={generation}
-                                                        onShowErrorDialog={onShowErrorDialog}
-                                                        promptId={promptId}
-                                                    />
-                                                )}
-                                                {generation.status !== "error" && generation.outputs.map((output) => (
-                                                    <Fragment key={output.url}>
-                                                        <OutputRenderer
-                                                            output={output}
-                                                            showOutputFileName={showOutputFileName}
-                                                            textOutputEnabled={textOutputEnabled}
-                                                        />
-                                                    </Fragment>
-                                                ))}
-                                            </div>
-                                            <hr className={`w-full py-4 ${index !== array.length - 1 ? 'border-gray-300' : 'border-transparent'}`} />
-                                        </div>
-                                    ))}
+                                    {Object.entries(results)
+                                        .filter(([, gen]) => gen.status === "error")
+                                        .map(([promptId, generation]) => (
+                                            <GenerationError
+                                                key={promptId}
+                                                generation={generation}
+                                                onShowErrorDialog={onShowErrorDialog}
+                                                promptId={promptId}
+                                            />
+                                        ))}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4 w-full">
+                                        <GeneratingIndicator loading={loading} />
+                                        {displayItems.map((item) => (
+                                            <OutputRenderer
+                                                key={item.output.url}
+                                                output={item.output}
+                                                companionText={item.companionText}
+                                                showOutputFileName={showOutputFileName}
+                                                textOutputEnabled={textOutputEnabled}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </ScrollArea>
@@ -403,7 +440,7 @@ function GeneratingIndicator({ loading }: { loading: boolean }) {
     if (!loading) return null;
 
     return (
-        <>
+        <div className="flex flex-col gap-2">
             <style jsx global>{`
                 @keyframes vc-indeterminate {
                     0% { transform: translateX(-120%); }
@@ -413,27 +450,18 @@ function GeneratingIndicator({ loading }: { loading: boolean }) {
                     animation: vc-indeterminate 1.2s ease-in-out infinite;
                 }
             `}</style>
-            <div className="flex flex-col gap-4 w-full">
-                <div className="flex flex-wrap w-full gap-4 pt-4">
-                    <div className="flex flex-col gap-2 sm:w-[calc(50%-2rem)] lg:w-[calc(33.333%-2rem)]">
-                        <BlurFade delay={0.25} inView className="flex items-center justify-center w-full h-full">
-                            <div className="w-full h-64 rounded-md bg-muted animate-pulse flex items-center justify-center">
-                                <div className="flex flex-col items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-muted-foreground/20 animate-pulse"></div>
-                                    <span className="text-sm text-muted-foreground animate-pulse">Generating...</span>
-                                </div>
-                            </div>
-                        </BlurFade>
-                        <div className="flex flex-col gap-2">
-                            <div role="progressbar" className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted-foreground/10">
-                                <div className="vc-indeterminate absolute inset-y-0 w-1/3 rounded-full bg-muted-foreground/40" />
-                            </div>
-                        </div>
+            <BlurFade delay={0.25} inView className="flex items-center justify-center w-full h-full">
+                <div className="w-full aspect-square rounded-md bg-muted animate-pulse flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-muted-foreground/20 animate-pulse"></div>
+                        <span className="text-sm text-muted-foreground animate-pulse">Generating...</span>
                     </div>
                 </div>
-                <hr className="w-full py-4 border-gray-300" />
+            </BlurFade>
+            <div role="progressbar" className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted-foreground/10">
+                <div className="vc-indeterminate absolute inset-y-0 w-1/3 rounded-full bg-muted-foreground/40" />
             </div>
-        </>
+        </div>
     );
 }
 
@@ -468,48 +496,33 @@ function GenerationError({ generation, promptId, onShowErrorDialog }: {
     );
 }
 
-function OutputRenderer({ output, textOutputEnabled, showOutputFileName }: {
+function OutputRenderer({ output, companionText, textOutputEnabled, showOutputFileName }: {
     output: IOutput,
+    companionText?: IOutput,
     textOutputEnabled: boolean,
     showOutputFileName: boolean,
 }) {
-    const contentType = getOutputContentType(output);
-
     const getOutputComponent = () => {
+        const contentType = getOutputContentType(output);
         if (contentType.startsWith('image/') && contentType !== "image/vnd.adobe.photoshop") {
-            return <ImageDialog output={output} showOutputFileName={showOutputFileName} />;
+            return <ImageDialog output={output} showOutputFileName={showOutputFileName} companionText={companionText} textOutputEnabled={textOutputEnabled} />;
         } else if (contentType.startsWith('video/')) {
             return <VideoDialog output={output} />;
         } else if (contentType.startsWith('audio/')) {
             return <AudioDialog output={output} />;
-        } else if (contentType.startsWith('text/')) {
-            return null;
         } else {
             return <FileOutput output={output} />;
         }
     };
 
-    const outputComponent = getOutputComponent();
-
     return (
-        <>
-            {outputComponent && (
-                <div className="flex pt-1 w-64 h-64 items-center justify-center">
-                    <BlurFade delay={0.25} inView className="flex items-center justify-center w-full h-full">
-                        {outputComponent}
-                    </BlurFade>
-                </div>
-            )}
-            {contentType.startsWith('text/') && textOutputEnabled && (
-                <BlurFade delay={0.25} inView className="flex items-center justify-center w-full h-full">
-                    <TextOutput output={output} />
-                </BlurFade>
-            )}
-        </>
+        <BlurFade delay={0.25} inView className="flex items-center justify-center w-full">
+            {getOutputComponent()}
+        </BlurFade>
     );
 }
 
-function ImageDialog({ output, showOutputFileName }: { output: IOutput, showOutputFileName: boolean }) {
+function ImageDialog({ output, showOutputFileName, companionText, textOutputEnabled }: { output: IOutput, showOutputFileName: boolean, companionText?: IOutput, textOutputEnabled?: boolean }) {
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
     const [containerWidth, setContainerWidth] = useState(0);
     const [containerHeight, setContainerHeight] = useState(0);
@@ -550,7 +563,7 @@ function ImageDialog({ output, showOutputFileName }: { output: IOutput, showOutp
                 <img
                     src={output.url}
                     alt="Generated output"
-                    className="w-full h-64 object-contain rounded-md transition-all hover:scale-105 hover:cursor-pointer"
+                    className="w-full aspect-square object-cover rounded-md transition-all hover:scale-105 hover:cursor-pointer"
                     draggable="true"
                     onDragStart={createMediaDragHandler({
                         url: output.url,
@@ -578,6 +591,19 @@ function ImageDialog({ output, showOutputFileName }: { output: IOutput, showOutp
                         </TransformComponent>
                     </TransformWrapper>
                 </div>
+                {companionText && textOutputEnabled && (
+                    <Collapsible>
+                        <div className="bg-background/90 backdrop-blur-sm rounded-md mx-2">
+                            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+                                <span>Generation parameters</span>
+                                <ChevronDown className="h-4 w-4" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                                <CompanionTextContent output={companionText} />
+                            </CollapsibleContent>
+                        </div>
+                    </Collapsible>
+                )}
                 <DialogFooter className="bg-transparent flex flex-row items-center justify-between gap-4 px-2 py-1">
                     <span className="text-sm text-muted-foreground truncate">
                         {getOutputFileName(output)}
@@ -679,6 +705,44 @@ function TextOutput({ output }: { output: IOutput }) {
             <div className="flex justify-end mt-2">
                 <Button variant="outline" size="sm" onClick={handleDownload} disabled={!text}>
                     <Download className="h-4 w-4 mr-2" />
+                    {outputName}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+function CompanionTextContent({ output }: { output: IOutput }) {
+    const [text, setText] = useState("");
+    const outputName = getOutputFileName(output);
+
+    useEffect(() => {
+        if (output.file instanceof File) {
+            output.file.text().then(setText);
+        } else {
+            fetch(`/api/text-proxy?url=${encodeURIComponent(output.url)}`)
+                .then(res => res.ok ? res.text() : "")
+                .then(setText)
+                .catch(() => setText(""));
+        }
+    }, [output.file, output.url]);
+
+    const handleDownload = () => {
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = outputName;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    return (
+        <div className="px-3 pb-3">
+            <Textarea value={text} readOnly className="w-full text-xs font-mono" rows={4} />
+            <div className="flex justify-end mt-1">
+                <Button variant="ghost" size="sm" onClick={handleDownload} disabled={!text}>
+                    <Download className="h-3 w-3 mr-1" />
                     {outputName}
                 </Button>
             </div>

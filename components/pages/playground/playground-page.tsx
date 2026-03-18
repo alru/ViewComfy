@@ -4,7 +4,8 @@ import {
     Settings,
     History,
     Download,
-    CircleX
+    CircleX,
+    ChevronDown,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +29,7 @@ import { cn, getComfyUIRandomSeed } from "@/lib/utils";
 import { createMediaDragHandler } from "@/lib/drag-utils";
 import WorkflowSwitcher from "@/components/workflow-switchter";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { PreviewOutputsImageGallery } from "@/components/images-preview"
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -133,10 +135,21 @@ interface IPlaygroundPageContent {
     cancelJob?: (promptId: string) => Promise<unknown>;
 }
 
+interface IDisplayItem {
+    output: IOutput;
+    companionText?: IOutput;
+    promptId: string;
+}
+
 const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getBaseName = (filename: string): string => {
+    const lastDot = filename.lastIndexOf('.');
+    return lastDot > 0 ? filename.substring(0, lastDot) : filename;
 };
 
 const getOutputFileName = (output: { file: File | S3FilesData, url: string }): string => {
@@ -153,6 +166,31 @@ const getOutputContentType = (output: IOutput): string => {
     } else {
         return output.file.type;
     }
+}
+
+function buildDisplayItems(results: IResults): IDisplayItem[] {
+    const items: IDisplayItem[] = [];
+    for (const [promptId, generation] of Object.entries(results)) {
+        if (generation.status === "error") continue;
+        const outputs = generation.outputs;
+        const paired = new Set<number>();
+        for (let i = 0; i < outputs.length; i++) {
+            if (paired.has(i)) continue;
+            const contentType = getOutputContentType(outputs[i]);
+            if (contentType.startsWith('text/')) continue;
+            let companion: IOutput | undefined;
+            if (i + 1 < outputs.length) {
+                const nextType = getOutputContentType(outputs[i + 1]);
+                if (nextType.startsWith('text/') &&
+                    getBaseName(getOutputFileName(outputs[i])) === getBaseName(getOutputFileName(outputs[i + 1]))) {
+                    companion = outputs[i + 1];
+                    paired.add(i + 1);
+                }
+            }
+            items.push({ output: outputs[i], companionText: companion, promptId });
+        }
+    }
+    return items;
 }
 
 function PlaygroundPageContent({ doPost, loading, setLoading, runningWorkflows, workflowsCompleted, cancellingWorkflows, setCancellingWorkflow, removeRunningWorkflow, removeCancellingWorkflow, cancelJob }: IPlaygroundPageContent) {
@@ -175,6 +213,7 @@ function PlaygroundPageContent({ doPost, loading, setLoading, runningWorkflows, 
     const [historySidebarOpen, setHistorySidebarOpen] = useState(false);
     const [textOutputEnabled, setTextOutputEnabled] = useState(false);
     const [showOutputFileName, setShowOutputFileName] = useState(false);
+    const displayItems = useMemo(() => buildDisplayItems(results), [results]);
     const [permission, setPermission] = useState<"default" | "granted" | "denied">("default");
     const [isRequesting, setIsRequesting] = useState(false);
     const isNotificationAvailable = window && 'Notification' in window;
@@ -649,36 +688,28 @@ function PlaygroundPageContent({ doPost, loading, setLoading, runningWorkflows, 
                             )}
                             <div className="flex-1 h-full p-4 flex overflow-y-auto">
                                 <div className="flex flex-col w-full h-full">
-                                    <Generating loading={loading} runningWorkflows={runningWorkflows} runningApiExecutions={runningExecutions} cancellingWorkflows={cancellingWorkflows} onCancelWorkflow={handleCancelWorkflow} />
-                                    {Object.entries(results).map(([promptId, generation], index, array) => (
-                                        <div className="flex flex-col gap-4 w-full h-full" key={promptId}>
-                                            <div className="flex flex-wrap w-full h-full gap-4 pt-4" key={promptId}>
-                                                {generation.status && generation.status === "error" &&
-                                                    <GenerationError
-                                                        generation={generation}
-                                                        onShowErrorDialog={onShowErrorDialog}
-                                                        promptId={promptId}
-
-                                                    />
-                                                }
-                                                {!(generation.status && generation.status === "error") && generation.outputs.map((output) => (
-                                                    <Fragment key={output.url}>
-                                                        <OutputRenderer
-                                                            output={output}
-                                                            showOutputFileName={showOutputFileName}
-                                                            textOutputEnabled={textOutputEnabled}
-                                                        />
-                                                    </Fragment>
-                                                ))}
-                                            </div>
-                                            <hr className={
-                                                `w-full py-4 
-                                            ${index !== array.length - 1 ? 'border-gray-300' : 'border-transparent'}
-                                            `
-                                            }
+                                    {Object.entries(results)
+                                        .filter(([, gen]) => gen.status === "error")
+                                        .map(([promptId, generation]) => (
+                                            <GenerationError
+                                                key={promptId}
+                                                generation={generation}
+                                                onShowErrorDialog={onShowErrorDialog}
+                                                promptId={promptId}
                                             />
-                                        </div>
-                                    ))}
+                                        ))}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4 w-full">
+                                        <Generating loading={loading} runningWorkflows={runningWorkflows} runningApiExecutions={runningExecutions} cancellingWorkflows={cancellingWorkflows} onCancelWorkflow={handleCancelWorkflow} />
+                                        {displayItems.map((item) => (
+                                            <OutputRenderer
+                                                key={item.output.url}
+                                                output={item.output}
+                                                companionText={item.companionText}
+                                                showOutputFileName={showOutputFileName}
+                                                textOutputEnabled={textOutputEnabled}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </ScrollArea>
@@ -710,7 +741,7 @@ export default function PlaygroundPage() {
     return content;
 }
 
-export function ImageDialog({ output, showOutputFileName }: { output: { file: File | S3FilesData, url: string }, showOutputFileName: boolean }) {
+export function ImageDialog({ output, showOutputFileName, companionText, textOutputEnabled }: { output: { file: File | S3FilesData, url: string }, showOutputFileName: boolean, companionText?: IOutput, textOutputEnabled?: boolean }) {
     const backgroundColor = "black";
     const scaleUp = false;
     const zoomFactor = 8;
@@ -784,7 +815,7 @@ export function ImageDialog({ output, showOutputFileName }: { output: { file: Fi
                     key={output.url}
                     src={output.url}
                     alt={`${output.url}`}
-                    className={cn("w-full h-64 object-contain rounded-md transition-all hover:scale-105 hover:cursor-pointer")}
+                    className={cn("w-full aspect-square object-cover rounded-md transition-all hover:scale-105 hover:cursor-pointer")}
                     draggable="true"
                     onDragStart={createMediaDragHandler({
                         url: output.url,
@@ -829,6 +860,19 @@ export function ImageDialog({ output, showOutputFileName }: { output: { file: Fi
                         </TransformComponent>
                     </TransformWrapper>
                 </div>
+                {companionText && textOutputEnabled && (
+                    <Collapsible>
+                        <div className="bg-background/90 backdrop-blur-sm rounded-md mx-2">
+                            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+                                <span>Generation parameters</span>
+                                <ChevronDown className="h-4 w-4" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                                <CompanionTextContent output={companionText} />
+                            </CollapsibleContent>
+                        </div>
+                    </Collapsible>
+                )}
                 <DialogFooter className="bg-transparent flex flex-row items-center justify-between gap-4 px-2 py-1">
                     <span className="text-sm text-muted-foreground truncate">
                         {getOutputFileName(output)}
@@ -959,6 +1003,44 @@ export function TextOutput({ output }: { output: IOutput }) {
     )
 }
 
+function CompanionTextContent({ output }: { output: IOutput }) {
+    const [text, setText] = useState<string>("");
+    const outputName = getOutputFileName(output);
+
+    useEffect(() => {
+        if (output.file instanceof File) {
+            output.file.text().then(setText);
+        } else {
+            fetch(`/api/text-proxy?url=${encodeURIComponent(output.url)}`)
+                .then(res => res.ok ? res.text() : "")
+                .then(setText)
+                .catch(() => setText(""));
+        }
+    }, [output.file, output.url]);
+
+    const handleDownload = () => {
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = outputName;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    return (
+        <div className="px-3 pb-3">
+            <Textarea value={text} readOnly className="w-full text-xs font-mono" rows={4} />
+            <div className="flex justify-end mt-1">
+                <Button variant="ghost" size="sm" onClick={handleDownload} disabled={!text}>
+                    <Download className="h-3 w-3 mr-1" />
+                    {outputName}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 export function FileOutput({ output }: { output: IOutput }) {
     const outputName = getOutputFileName(output);
 
@@ -983,14 +1065,15 @@ export function FileOutput({ output }: { output: IOutput }) {
 
 function OutputRenderer({
     output,
+    companionText,
     textOutputEnabled,
     showOutputFileName }:
     {
         output: IOutput,
+        companionText?: IOutput,
         textOutputEnabled: boolean,
         showOutputFileName: boolean,
     }) {
-
 
     const getOutputComponent = () => {
         const contentType = getOutputContentType(output);
@@ -998,42 +1081,22 @@ function OutputRenderer({
         if (contentType.startsWith('image/') && contentType !== "image/vnd.adobe.photoshop") {
             return (
                 <SelectableImage imageUrl={output.url}>
-                    <ImageDialog output={output} showOutputFileName={showOutputFileName} />
+                    <ImageDialog output={output} showOutputFileName={showOutputFileName} companionText={companionText} textOutputEnabled={textOutputEnabled} />
                 </SelectableImage>
             );
         } else if (contentType.startsWith('video/')) {
             return <VideoDialog output={output} />
         } else if (contentType.startsWith('audio/')) {
             return <AudioDialog output={output} />
-        } else if (contentType.startsWith('text/')) {
-            return null;
         } else {
             return <FileOutput output={output} />;
         }
     }
 
-    const outputComponent = getOutputComponent();
-
     return (
-        <>
-            {outputComponent && (
-                <div
-                    key={output.url}
-                    className="flex pt-1 w-64 h-64 items-center justify-center"
-                >
-                    <BlurFade key={output.url} delay={0.25} inView className="flex items-center justify-center w-full h-full">
-                        {outputComponent}
-                    </BlurFade>
-                </div>
-            )}
-            {
-                ((getOutputContentType(output)).startsWith('text/') && textOutputEnabled) && (
-                    <BlurFade key={`${output.url}-text`} delay={0.25} inView className="flex items-center justify-center w-full h-full">
-                        <TextOutput output={output} />
-                    </BlurFade>
-                )
-            }
-        </>
+        <BlurFade delay={0.25} inView className="flex items-center justify-center w-full">
+            {getOutputComponent()}
+        </BlurFade>
     )
 }
 
@@ -1101,6 +1164,20 @@ const IndeterminateLoadingBarStyles = () => {
     );
 };
 
+const GeneratingPlaceholder = ({ label }: { label: string }) => (
+    <div className="flex flex-col gap-2">
+        <BlurFade delay={0.25} inView className="flex items-center justify-center w-full h-full">
+            <div className="w-full aspect-square rounded-md bg-muted animate-pulse flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-muted-foreground/20 animate-pulse"></div>
+                    <span className="text-sm text-muted-foreground animate-pulse">{label}</span>
+                </div>
+            </div>
+        </BlurFade>
+        <IndeterminateLoadingBar />
+    </div>
+);
+
 const Generating = (props: {
     runningWorkflows: IWorkflowHistoryModel[],
     runningApiExecutions: RunningApiAppExecution[],
@@ -1110,75 +1187,61 @@ const Generating = (props: {
 }) => {
     const { runningWorkflows, runningApiExecutions, cancellingWorkflows, loading, onCancelWorkflow } = props;
 
-    const generatingDetails = (
-        <div className="flex flex-col gap-2">
-            <IndeterminateLoadingBar />
-        </div>
-    );
-
     if (runningWorkflows.length > 0) {
         return (
             <>
                 <IndeterminateLoadingBarStyles />
                 {runningWorkflows.map((w) => {
                     const isCancelling = cancellingWorkflows.includes(w.promptId);
-                    
                     return (
-                        <div key={w.promptId} className="flex flex-col gap-4 w-full">
-                            <div className="flex flex-wrap w-full gap-4 pt-4">
-                                <div key={`loading-placeholder-${w.promptId}`} className="flex flex-col gap-2 sm:w-[calc(50%-2rem)] lg:w-[calc(33.333%-2rem)]">
-                                    <AlertDialog>
-                                        <BlurFade delay={0.25} inView className="flex items-center justify-center w-full h-full">
-                                            <AlertDialogTrigger asChild disabled={isCancelling}>
-                                                <button 
-                                                    type="button"
-                                                    disabled={isCancelling}
-                                                    className={cn(
-                                                        "w-full h-64 rounded-md flex items-center justify-center transition-all",
-                                                        isCancelling 
-                                                            ? "bg-muted/50" 
-                                                            : "bg-muted animate-pulse cursor-pointer hover:ring-2 hover:ring-primary/50"
-                                                    )}
-                                                >
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <div className={cn(
-                                                            "w-8 h-8 rounded-full",
-                                                            isCancelling 
-                                                                ? "bg-muted-foreground/10" 
-                                                                : "bg-muted-foreground/20 animate-pulse"
-                                                        )}></div>
-                                                        <span className={cn(
-                                                            "text-sm text-muted-foreground",
-                                                            !isCancelling && "animate-pulse"
-                                                        )}>
-                                                            {isCancelling ? "Cancelling..." : "Generating..."}
-                                                        </span>
-                                                    </div>
-                                                </button>
-                                            </AlertDialogTrigger>
-                                        </BlurFade>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Cancel generation?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Are you sure you want to cancel this generation? This action cannot be undone.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Continue generating</AlertDialogCancel>
-                                                <AlertDialogAction 
-                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                                    onClick={() => onCancelWorkflow(w.promptId)}
-                                                >
-                                                    Cancel generation
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                    {generatingDetails}
-                                </div>
-                            </div>
-                            <hr className="w-full py-4 border-gray-300" />
+                        <div key={w.promptId} className="flex flex-col gap-2">
+                            <AlertDialog>
+                                <BlurFade delay={0.25} inView className="flex items-center justify-center w-full h-full">
+                                    <AlertDialogTrigger asChild disabled={isCancelling}>
+                                        <button
+                                            type="button"
+                                            disabled={isCancelling}
+                                            className={cn(
+                                                "w-full aspect-square rounded-md flex items-center justify-center transition-all",
+                                                isCancelling
+                                                    ? "bg-muted/50"
+                                                    : "bg-muted animate-pulse cursor-pointer hover:ring-2 hover:ring-primary/50"
+                                            )}
+                                        >
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className={cn(
+                                                    "w-8 h-8 rounded-full",
+                                                    isCancelling ? "bg-muted-foreground/10" : "bg-muted-foreground/20 animate-pulse"
+                                                )}></div>
+                                                <span className={cn(
+                                                    "text-sm text-muted-foreground",
+                                                    !isCancelling && "animate-pulse"
+                                                )}>
+                                                    {isCancelling ? "Cancelling..." : "Generating..."}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    </AlertDialogTrigger>
+                                </BlurFade>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Cancel generation?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Are you sure you want to cancel this generation? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Continue generating</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            onClick={() => onCancelWorkflow(w.promptId)}
+                                        >
+                                            Cancel generation
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <IndeterminateLoadingBar />
                         </div>
                     );
                 })}
@@ -1191,22 +1254,7 @@ const Generating = (props: {
             <>
                 <IndeterminateLoadingBarStyles />
                 {runningApiExecutions.map((exec) => (
-                    <div key={`api-exec-${exec.executionId}`} className="flex flex-col gap-4 w-full">
-                        <div className="flex flex-wrap w-full gap-4 pt-4">
-                            <div className="flex flex-col gap-2 sm:w-[calc(50%-2rem)] lg:w-[calc(33.333%-2rem)]">
-                                <BlurFade delay={0.25} inView className="flex items-center justify-center w-full h-full">
-                                    <div className="w-full h-64 rounded-md bg-muted animate-pulse flex items-center justify-center">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-muted-foreground/20 animate-pulse"></div>
-                                            <span className="text-sm text-muted-foreground animate-pulse">Generating...</span>
-                                        </div>
-                                    </div>
-                                </BlurFade>
-                                {generatingDetails}
-                            </div>
-                        </div>
-                        <hr className="w-full py-4 border-gray-300" />
-                    </div>
+                    <GeneratingPlaceholder key={`api-exec-${exec.executionId}`} label="Generating..." />
                 ))}
             </>
         );
@@ -1216,22 +1264,7 @@ const Generating = (props: {
         return (
             <>
                 <IndeterminateLoadingBarStyles />
-                <div className="flex flex-col gap-4 w-full">
-                    <div className="flex flex-wrap w-full gap-4 pt-4">
-                        <div key={`loading-placeholder`} className="flex flex-col gap-2 sm:w-[calc(50%-2rem)] lg:w-[calc(33.333%-2rem)]">
-                            <BlurFade delay={0.25} inView className="flex items-center justify-center w-full h-full">
-                                <div className="w-full h-64 rounded-md bg-muted animate-pulse flex items-center justify-center">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-muted-foreground/20 animate-pulse"></div>
-                                        <span className="text-sm text-muted-foreground animate-pulse">Generating...</span>
-                                    </div>
-                                </div>
-                            </BlurFade>
-                            {generatingDetails}
-                        </div>
-                    </div>
-                    <hr className="w-full py-4 border-gray-300" />
-                </div>
+                <GeneratingPlaceholder label="Generating..." />
             </>
         );
     }

@@ -5,7 +5,6 @@ import {
     History,
     Download,
     CircleX,
-    ChevronDown,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -29,14 +28,12 @@ import { cn, getComfyUIRandomSeed } from "@/lib/utils";
 import { createMediaDragHandler } from "@/lib/drag-utils";
 import WorkflowSwitcher from "@/components/workflow-switchter";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { PreviewOutputsImageGallery } from "@/components/images-preview"
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Dialog,
     DialogContent,
-    DialogFooter,
     DialogTrigger,
 } from "@/components/ui/dialog"
 import {
@@ -825,70 +822,75 @@ export function ImageDialog({ output, showOutputFileName, companionText, textOut
                 />
             </DialogTrigger>
             {showOutputFileName && parseFileName(getOutputFileName(output))}
-            <DialogContent className="max-w-fit max-h-[90vh] border-0 p-0 bg-transparent [&>button]:bg-background [&>button]:border [&>button]:border-border [&>button]:rounded-full [&>button]:p-1 [&>button]:shadow-md">
-                <div
-                    className="rounded-md"
-                    style={{
-                        width: "100%",
-                        height: "100%",
-                        cursor: "zoom-in"
-                    }}
-                    ref={(el: HTMLDivElement | null) => {
-                        setContainer(el);
-                    }}
-                >
-                    <TransformWrapper
-                        key={`${containerWidth}x${containerHeight}`}
-                        initialScale={imageScale}
-                        minScale={imageScale}
-                        maxScale={imageScale * zoomFactor}
-                        centerOnInit
-
-                    >
-                        <TransformComponent
-                            wrapperStyle={{
-                                width: "100%",
-                                height: "100%",
-                                borderRadius: "8px",
-                            }}
-                        >
-                            <img key={output.url}
-                                src={output.url}
-                                alt={`${output.url}`}
-                                className="max-h-[85vh] w-auto object-contain rounded-md"
-                            />
-                        </TransformComponent>
-                    </TransformWrapper>
-                </div>
-                {companionText && textOutputEnabled && (
-                    <Collapsible>
-                        <div className="bg-background/90 backdrop-blur-sm rounded-md mx-2">
-                            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
-                                <span>Generation parameters</span>
-                                <ChevronDown className="h-4 w-4" />
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <CompanionTextContent output={companionText} />
-                            </CollapsibleContent>
+            <DialogContent className="max-w-[95vw] max-h-[90vh] border-0 p-0 bg-background/95 backdrop-blur-md rounded-lg overflow-hidden [&>button]:bg-background [&>button]:border [&>button]:border-border [&>button]:rounded-full [&>button]:p-1 [&>button]:shadow-md">
+                <div className="flex flex-row h-full max-h-[90vh]">
+                    {/* Sidebar */}
+                    <div className="w-72 shrink-0 flex flex-col border-r border-border bg-background overflow-y-auto">
+                        {/* File info */}
+                        <div className="p-4 border-b border-border">
+                            <h3 className="text-sm font-medium truncate" title={getOutputFileName(output)}>
+                                {getOutputFileName(output)}
+                            </h3>
+                            {imageNaturalWidth > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {imageNaturalWidth} &times; {imageNaturalHeight}px
+                                    {output.file.size > 0 && ` \u00b7 ${formatFileSize(output.file.size)}`}
+                                </p>
+                            )}
                         </div>
-                    </Collapsible>
-                )}
-                <DialogFooter className="bg-transparent flex flex-row items-center justify-between gap-4 px-2 py-1">
-                    <span className="text-sm text-muted-foreground truncate">
-                        {getOutputFileName(output)}
-                        {imageNaturalWidth > 0 && ` (${imageNaturalWidth}\u00d7${imageNaturalHeight}px`}
-                        {imageNaturalWidth > 0 && output.file.size > 0 && `, ${formatFileSize(output.file.size)}`}
-                        {imageNaturalWidth > 0 && ')'}
-                    </span>
-                    <Button className="shrink-0"
-                        onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = output.url;
-                            link.download = getOutputFileName(output);
-                            link.click();
+                        {/* Generation parameters */}
+                        {companionText && textOutputEnabled && (
+                            <div className="flex-1 min-h-0 p-4 border-b border-border overflow-y-auto">
+                                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Generation parameters</h4>
+                                <CompanionTextContent output={companionText} />
+                            </div>
+                        )}
+                        {/* Download buttons */}
+                        <div className="p-4 flex flex-col gap-2 mt-auto">
+                            <Button className="w-full" onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = output.url;
+                                link.download = getOutputFileName(output);
+                                link.click();
+                            }}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Download image
+                            </Button>
+                            {companionText && textOutputEnabled && (
+                                <CompanionTextDownloadButton output={companionText} />
+                            )}
+                        </div>
+                    </div>
+                    {/* Image area */}
+                    <div
+                        className="flex-1 min-w-0 bg-black/90 rounded-r-lg"
+                        style={{ cursor: "zoom-in" }}
+                        ref={(el: HTMLDivElement | null) => {
+                            setContainer(el);
                         }}
-                    >Download</Button>
-                </DialogFooter>
+                    >
+                        <TransformWrapper
+                            key={`${containerWidth}x${containerHeight}`}
+                            initialScale={imageScale}
+                            minScale={imageScale}
+                            maxScale={imageScale * zoomFactor}
+                            centerOnInit
+                        >
+                            <TransformComponent
+                                wrapperStyle={{
+                                    width: "100%",
+                                    height: "100%",
+                                }}
+                            >
+                                <img key={output.url}
+                                    src={output.url}
+                                    alt={`${output.url}`}
+                                    className="max-h-[85vh] w-auto object-contain"
+                                />
+                            </TransformComponent>
+                        </TransformWrapper>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );
@@ -1003,7 +1005,7 @@ export function TextOutput({ output }: { output: IOutput }) {
     )
 }
 
-function CompanionTextContent({ output }: { output: IOutput }) {
+function useCompanionText(output: IOutput) {
     const [text, setText] = useState<string>("");
     const outputName = getOutputFileName(output);
 
@@ -1018,7 +1020,7 @@ function CompanionTextContent({ output }: { output: IOutput }) {
         }
     }, [output.file, output.url]);
 
-    const handleDownload = () => {
+    const handleDownload = useCallback(() => {
         const blob = new Blob([text], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -1026,18 +1028,23 @@ function CompanionTextContent({ output }: { output: IOutput }) {
         link.download = outputName;
         link.click();
         URL.revokeObjectURL(url);
-    };
+    }, [text, outputName]);
 
+    return { text, outputName, handleDownload };
+}
+
+function CompanionTextContent({ output }: { output: IOutput }) {
+    const { text } = useCompanionText(output);
+    return <Textarea value={text} readOnly className="w-full text-xs font-mono bg-muted/50 resize-none" rows={6} />;
+}
+
+function CompanionTextDownloadButton({ output }: { output: IOutput }) {
+    const { text, outputName, handleDownload } = useCompanionText(output);
     return (
-        <div className="px-3 pb-3">
-            <Textarea value={text} readOnly className="w-full text-xs font-mono" rows={4} />
-            <div className="flex justify-end mt-1">
-                <Button variant="ghost" size="sm" onClick={handleDownload} disabled={!text}>
-                    <Download className="h-3 w-3 mr-1" />
-                    {outputName}
-                </Button>
-            </div>
-        </div>
+        <Button variant="outline" className="w-full" onClick={handleDownload} disabled={!text}>
+            <Download className="h-4 w-4 mr-2" />
+            Download parameters
+        </Button>
     );
 }
 

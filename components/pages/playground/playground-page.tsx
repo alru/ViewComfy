@@ -822,10 +822,10 @@ export function ImageDialog({ output, showOutputFileName, companionText, textOut
                 />
             </DialogTrigger>
             {showOutputFileName && parseFileName(getOutputFileName(output))}
-            <DialogContent className="max-w-[95vw] max-h-[90vh] border-0 p-0 bg-background/95 backdrop-blur-md rounded-lg overflow-hidden [&>button]:bg-background [&>button]:border [&>button]:border-border [&>button]:rounded-full [&>button]:p-1 [&>button]:shadow-md">
-                <div className="flex flex-row h-full max-h-[90vh]">
+            <DialogContent className="w-screen h-screen max-w-none max-h-none border-0 p-0 rounded-none bg-background [&>button]:bg-background [&>button]:border [&>button]:border-border [&>button]:rounded-full [&>button]:p-1 [&>button]:shadow-md [&>button]:z-10">
+                <div className="flex flex-row w-full h-full">
                     {/* Sidebar */}
-                    <div className="w-72 shrink-0 flex flex-col border-r border-border bg-background overflow-y-auto">
+                    <div className="w-72 shrink-0 flex flex-col border-r border-border bg-background">
                         {/* File info */}
                         <div className="p-4 border-b border-border">
                             <h3 className="text-sm font-medium truncate" title={getOutputFileName(output)}>
@@ -840,7 +840,7 @@ export function ImageDialog({ output, showOutputFileName, companionText, textOut
                         </div>
                         {/* Generation parameters */}
                         {companionText && textOutputEnabled && (
-                            <div className="flex-1 min-h-0 p-4 border-b border-border overflow-y-auto">
+                            <div className="flex-1 min-h-0 p-4 border-b border-border">
                                 <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Generation parameters</h4>
                                 <CompanionTextContent output={companionText} />
                             </div>
@@ -863,7 +863,7 @@ export function ImageDialog({ output, showOutputFileName, companionText, textOut
                     </div>
                     {/* Image area */}
                     <div
-                        className="flex-1 min-w-0 bg-black/90 rounded-r-lg"
+                        className="flex-1 min-w-0 bg-black/90"
                         style={{ cursor: "zoom-in" }}
                         ref={(el: HTMLDivElement | null) => {
                             setContainer(el);
@@ -885,7 +885,7 @@ export function ImageDialog({ output, showOutputFileName, companionText, textOut
                                 <img key={output.url}
                                     src={output.url}
                                     alt={`${output.url}`}
-                                    className="max-h-[85vh] w-auto object-contain"
+                                    className="max-h-screen w-auto object-contain"
                                 />
                             </TransformComponent>
                         </TransformWrapper>

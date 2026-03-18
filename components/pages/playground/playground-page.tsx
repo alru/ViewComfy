@@ -924,9 +924,25 @@ export function TextOutput({ output }: { output: IOutput }) {
 
     const outputName = getOutputFileName(output);
 
+    const handleDownload = () => {
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = outputName;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="pt-4 w-full">
             <Textarea id={outputName} value={text} readOnly className="w-full" rows={5} />
+            <div className="flex justify-end mt-2">
+                <Button variant="outline" size="sm" onClick={handleDownload} disabled={!text}>
+                    <Download className="h-4 w-4 mr-2" />
+                    {outputName}
+                </Button>
+            </div>
         </div>
     )
 }

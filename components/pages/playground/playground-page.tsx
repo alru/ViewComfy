@@ -133,6 +133,12 @@ interface IPlaygroundPageContent {
     cancelJob?: (promptId: string) => Promise<unknown>;
 }
 
+const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
 const getOutputFileName = (output: { file: File | S3FilesData, url: string }): string => {
     if ("filename" in output.file) {
         return output.file.filename;
@@ -823,12 +829,18 @@ export function ImageDialog({ output, showOutputFileName }: { output: { file: Fi
                         </TransformComponent>
                     </TransformWrapper>
                 </div>
-                <DialogFooter className="bg-transparent">
-                    <Button className="w-full"
+                <DialogFooter className="bg-transparent flex flex-row items-center justify-between gap-4 px-2 py-1">
+                    <span className="text-sm text-muted-foreground truncate">
+                        {getOutputFileName(output)}
+                        {imageNaturalWidth > 0 && ` (${imageNaturalWidth}\u00d7${imageNaturalHeight}px`}
+                        {imageNaturalWidth > 0 && output.file.size > 0 && `, ${formatFileSize(output.file.size)}`}
+                        {imageNaturalWidth > 0 && ')'}
+                    </span>
+                    <Button className="shrink-0"
                         onClick={() => {
                             const link = document.createElement('a');
                             link.href = output.url;
-                            link.download = `${output.url.split('/').pop()}`;
+                            link.download = getOutputFileName(output);
                             link.click();
                         }}
                     >Download</Button>
